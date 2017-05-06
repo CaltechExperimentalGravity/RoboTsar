@@ -17,7 +17,7 @@ USR = "JournalClubRoboTsar@gmail.com"
 PSSSWD = "" # This is temp measure until seperate key file can be enacted drawn from local dir
 
 
-# Some intial test values for email addresses
+# Some initial test values for email addresses
 me = "JournalClubRoboTsar@gmail.com"
 you = "wadean@gmail.com"
 
@@ -33,6 +33,7 @@ def main():
 
     # sendmail function takes 3 arguments: sender's address, recipient's address
     # and message to send - here it is sent as one string using the create_message sub-routien
+
     s.sendmail(me, you, create_message(me,you,"Test subject","All the text"))
     # s.sendmail(me, you, msg.as_string())
     s.quit()
