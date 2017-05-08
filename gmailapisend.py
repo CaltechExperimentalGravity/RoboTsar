@@ -15,6 +15,7 @@ from oauth2client.file import Storage
 import base64
 from email.mime.text import MIMEText
 
+import pandas as pd # Tools for opening csv files
 
 try:
     import argparse
@@ -28,13 +29,59 @@ debug = 1
 dryrun = 1
 
 
-phase = 0
-startdate = datetime(2017,4,21)
+startdate = datetime(2017,4,21) # Enter a starting date as a reference point for the list
+phase = 0 # Add and arbitrary phase shift (integer) to offset additions/subtractions from the list
 
-listposition =  (datetime.now()-startdate).days/7 + phase
 
-print(listposition)
+def cyclecount(startdate,vetolist,phase):
+    """
+    Takes start date in datetime formate, a list 
+    of dates to veto and adds a phase factor (used
+    for adjustment of date when the list is changed)
+    
+    Gives number that is a modulo of the jchost list length"""
 
+    listposition = 1
+    return listposition
+
+
+
+
+
+def main():
+    # Load names and dates to veto
+    jchosts = pd.read_csv('jchosts.csv', header=0, index_col=False)
+    vetodates = pd.read_csv('vetodates.csv', header=0, index_col=False)
+
+    print(vetodates)
+    print(datetime(vetodates) < datetime(2017,11,25))
+
+    listposition = (datetime.now() - startdate).days / 7 + phase
+
+
+    print(listposition)
+    print(jchosts['people'][listposition])
+
+
+
+    credentials = get_credentials()
+    http = credentials.authorize(httplib2.Http())
+    service = discovery.build('gmail', 'v1', http=http)
+
+
+    msgsender = 'JournalClubRoboTsar@gmail.com'
+    tousr = 'wadean@gmail.com'
+    msgsubject = 'Hello google api'
+    message_text = """
+    This is an email send by awade
+    There is more text but this is from my MacBookPro"""
+    userId_set = 'me'
+
+    # Make the message
+    mkMessage = create_message(msgsender, tousr, msgsubject, message_text)
+
+    # Send the message
+    send_message(service,"me",mkMessage)
 
 
 
@@ -123,42 +170,6 @@ def send_message(service, user_id, message):
       print('No message sent')
 
 
-def main():
-    """Shows basic usage of the Gmail API.
-
-    Creates a Gmail API service object and outputs a list of label names
-    of the user's Gmail account.
-    """
-    credentials = get_credentials()
-    http = credentials.authorize(httplib2.Http())
-    service = discovery.build('gmail', 'v1', http=http)
-
-
-    msgsender = 'JournalClubRoboTsar@gmail.com'
-    tousr = 'wadean@gmail.com'
-    msgsubject = 'Hello google api'
-    message_text = """
-    This is an email send by awade
-    There is more text but this is from my MacBookPro"""
-    userId_set = 'me'
-
-    # Make the message
-    mkMessage = create_message(msgsender, tousr, msgsubject, message_text)
-
-    # Send the message
-    send_message(service,"me",mkMessage)
-
-    # results = service.users().labels().list(userId='me').execute()
-    # labels = results.get('labels', [])
-    #
-    # if not labels:
-    #     print('No labels found.')
-    # else:
-    #   print('Labels:')
-    #   for label in labels:
-    #     print(label['name'])
-
-
-if __name__ == '__main__':
+if __name__ == '__main__': # Make it run, bitch
     main()
 
