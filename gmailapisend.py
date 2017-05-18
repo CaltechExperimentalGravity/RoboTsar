@@ -2,7 +2,7 @@ from __future__ import print_function
 import httplib2
 import os
 from datetime import datetime
-
+import datetime as dt
 
 #Import packages used for email sending
 from apiclient import discovery
@@ -16,6 +16,7 @@ import base64
 from email.mime.text import MIMEText
 
 import pandas as pd # Tools for opening csv files
+import numpy as np
 
 try:
     import argparse
@@ -53,14 +54,21 @@ def main():
     jchosts = pd.read_csv('jchosts.csv', header=0, index_col=False)
     vetodates = pd.read_csv('vetodates.csv', header=0, index_col=False)
 
-    print(vetodates)
-    print(datetime(vetodates) < datetime(2017,11,25))
+    #Dummy current date, replace this with dt.datetime.now()
+    #TODO: change to dt.datetime.now()
+    CurrentDate = datetime(2017,12,23) # Dummy test date
 
-    listposition = (datetime.now() - startdate).days / 7 + phase
+    NumSkips = np.sum(pd.to_datetime(vetodates.vetodate)<= CurrentDate)
+    print(NumSkips)
 
+    # print(vetodates)
+    # print(datetime(vetodates) < datetime(2017,11,25))
 
-    print(listposition)
-    print(jchosts['people'][listposition])
+    # listposition = (datetime.now() - startdate).days / 7 + phase
+    #
+    #
+    # print(listposition)
+    # print(jchosts['people'][listposition])
 
 
 
