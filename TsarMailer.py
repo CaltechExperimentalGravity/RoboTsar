@@ -30,7 +30,8 @@ debug = 1
 dryrun = 1
 
 
-phaseAdj = 0 # Add and arbitrary phase shift (integer) to offset additions/subtractions from the list
+phaseAdj = 3 # Add and arbitrary phase shift (integer) to offset additions/subtractions from the list
+
 
 
 def main():
@@ -40,8 +41,8 @@ def main():
 
     #TODO: change to dt.datetime.now()
     ListStartDate = datetime(2017, 1, 1)
-    CurrentDate = datetime(2017,7,16) # Dummy test date
-
+    CurrentDate = dt.datetime.now() #datetime(2017,7,16) # Dummy test date
+    CurrentDate = datetime(2017,5,18)
     AbsolutePhase = (CurrentDate-ListStartDate).days/7
     NumSkips = np.sum(pd.to_datetime(vetodates.vetodate)<= CurrentDate)
 
@@ -76,7 +77,7 @@ def main():
     
     The following week {leadnextnext} will lead discussions with a paper.
     
-    Please choose a paper, reply to this list with a link and post it to the 40m wiki here: https://wiki-40m.ligo.caltech.edu/Journal_Club
+    By Tuesday please choose a paper, reply to this list with a link and post it to the 40m wiki here: https://wiki-40m.ligo.caltech.edu/Journal_Club
     
     If you are unable to present a paper, check the Journal club roster at the above link and negogiate with someone for a swap. Reply to this list with the change so that the list order can be updated.
     """.format(leadnext=jchosts['people'][Listphase],leadnextnext=jchosts['people'][Listphase+1])
