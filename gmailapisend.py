@@ -34,21 +34,6 @@ startdate = datetime(2017,4,21) # Enter a starting date as a reference point for
 phase = 0 # Add and arbitrary phase shift (integer) to offset additions/subtractions from the list
 
 
-def cyclecount(startdate,vetolist,phase):
-    """
-    Takes start date in datetime formate, a list 
-    of dates to veto and adds a phase factor (used
-    for adjustment of date when the list is changed)
-    
-    Gives number that is a modulo of the jchost list length"""
-
-    listposition = 1
-    return listposition
-
-
-
-
-
 def main():
     # Load names and dates to veto
     jchosts = pd.read_csv('jchosts.csv', header=0, index_col=False)
@@ -146,7 +131,7 @@ def create_message(sender, to, subject, message_text):
   message['from'] = sender
   message['subject'] = subject
 
-  if dryrun == 1:
+  if debug == 1:
       print('--- Message to send ---')
       print(message)
       print('--- End message ---')
@@ -171,9 +156,10 @@ def send_message(service, user_id, message):
           message = (service.users().messages().send(userId=user_id, body=message).execute())
           print('Message Id: %s' % message['id'])
           return message
+
       except errors.HttpError, error:
           print('An error occurred: %s' % error)
-          # print('There was an error lol')
+
   elif dryrun == 1:
       print('No message sent')
 
