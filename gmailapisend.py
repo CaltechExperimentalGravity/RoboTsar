@@ -30,8 +30,7 @@ debug = 1
 dryrun = 1
 
 
-startdate = datetime(2017,4,21) # Enter a starting date as a reference point for the list
-phase = 0 # Add and arbitrary phase shift (integer) to offset additions/subtractions from the list
+phaseAdj = 0 # Add and arbitrary phase shift (integer) to offset additions/subtractions from the list
 
 
 def main():
@@ -39,40 +38,53 @@ def main():
     jchosts = pd.read_csv('jchosts.csv', header=0, index_col=False)
     vetodates = pd.read_csv('vetodates.csv', header=0, index_col=False)
 
-    #Dummy current date, replace this with dt.datetime.now()
     #TODO: change to dt.datetime.now()
-    CurrentDate = datetime(2017,12,23) # Dummy test date
+    ListStartDate = datetime(2017, 1, 1)
+    CurrentDate = datetime(2017,7,16) # Dummy test date
 
+    AbsolutePhase = (CurrentDate-ListStartDate).days/7
     NumSkips = np.sum(pd.to_datetime(vetodates.vetodate)<= CurrentDate)
-    print(NumSkips)
 
-    # print(vetodates)
-    # print(datetime(vetodates) < datetime(2017,11,25))
-
-    # listposition = (datetime.now() - startdate).days / 7 + phase
-    #
-    #
-    # print(listposition)
-    # print(jchosts['people'][listposition])
+    # Workout total weeks start date, ommitting skips and adding manual phase adjust then modulo against length of list of people
+    Listphase = (AbsolutePhase - NumSkips + phaseAdj) % (jchosts.shape[0]-1)
 
 
+    if debug == 1:
+        print("Absolute phase = {}".format(AbsolutePhase))
+        print("Number of weeks skipped due to holidays = {}".format(NumSkips))
+        print("Manual adjust twiddle factor  = {}".format(phaseAdj))
+
+        # print("Dates that are vetoed:")
+        # print(vetodates)
+
+    print(Listphase)
+
+    print(jchosts['people'][Listphase])
 
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('gmail', 'v1', http=http)
 
 
-    msgsender = 'JournalClubRoboTsar@gmail.com'
-    tousr = 'wadean@gmail.com'
-    msgsubject = 'Hello google api'
+    # Now set up email to send to JC list
+    sender = 'JournalClubRoboTsar@gmail.com'
+    to = 'wadean@gmail.com'
+    cc = (jchosts['email'][Listphase] + "; " + jchosts['email'][Listphase+ 1] + "; " + "awade@ligo.caltech.edu")
+    subject = 'Upcoming week: journal club presenters'
     message_text = """
-    This is an email send by awade
-    There is more text but this is from my MacBookPro"""
+    Journal club this week will be lead by {leadnext}.
+    
+    The following week {leadnextnext} will lead discussions with a paper.
+    
+    Please choose a paper, reply to this list with a link and post it to the 40m wiki here: https://wiki-40m.ligo.caltech.edu/Journal_Club
+    
+    If you are unable to present a paper, check the Journal club roster at the above link and negogiate with someone for a swap. Reply to this list with the change so that the list order can be updated.
+    """.format(leadnext=jchosts['people'][Listphase],leadnextnext=jchosts['people'][Listphase+1])
     userId_set = 'me'
 
     # Make the message
-    mkMessage = create_message(msgsender, tousr, msgsubject, message_text)
-
+    # mkMessage = create_message(msgsender, tousr, cc, msgsubject, message_text)
+    mkMessage = create_message(sender, to, cc, subject, message_text)
     # Send the message
     send_message(service,"me",mkMessage)
 
@@ -114,7 +126,7 @@ def get_credentials():
         print('Storing credentials to ' + credential_path)
     return credentials
 
-def create_message(sender, to, subject, message_text):
+def create_message(sender, to, cc, subject, message_text):
   """Create a message for an email.
 
   Args:
@@ -128,13 +140,16 @@ def create_message(sender, to, subject, message_text):
   """
   message = MIMEText(message_text)
   message['to'] = to
+  message['cc'] = cc
   message['from'] = sender
   message['subject'] = subject
 
   if debug == 1:
+      print('')
       print('--- Message to send ---')
       print(message)
       print('--- End message ---')
+      print('')
 
   return {'raw': base64.urlsafe_b64encode(message.as_string())}
 
