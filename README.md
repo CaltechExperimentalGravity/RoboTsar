@@ -4,3 +4,6 @@ JC reminder service python script
 To install needed packages in local env 
 
 pip install -r requirements.txt
+
+To run: python gmailapisend.py
+It will want to launch a browser to enter password for credentials
