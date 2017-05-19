@@ -34,6 +34,12 @@ dryrun = 0
 
 jchostgsheet = 'https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/pub?gid=0&single=true&output=csv'
 
+# If modifying these scopes, delete your previously saved credentials
+# at ~/.credentials/gmail-python-quickstart.json
+SCOPES = 'https://www.googleapis.com/auth/gmail.send'
+CLIENT_SECRET_FILE = 'client_secret.json'
+APPLICATION_NAME = 'JCTsar'
+
 
 def main():
     r = requests.get(jchostgsheet)  # Grab csv version of google spreadsheet name list
@@ -66,12 +72,12 @@ def main():
 
     # Now set up email to send to JC list
     sender = 'JournalClubRoboTsar@gmail.com'
-    to = 'wadean@gmail.com'
-    cc = ''
-    # cc = (jchosts.email[total_wkcount % jchosts.shape[0]] + "; " + jchosts.email[(total_wkcount+ 1) % jchosts.shape[0]] + "; " + "awade@ligo.caltech.edu")
+    to = 'ligo-journal-club@caltech.edu'
+    # cc = ''
+    cc = (jchosts.email[total_wkcount % jchosts.shape[0]] + "; " + jchosts.email[(total_wkcount+ 1) % jchosts.shape[0]] + "; " + "awade@ligo.caltech.edu")
     subject = 'Upcoming week: journal club presenters'
     message_text = """
-Journal club this week will be lead by {leadnext}.
+Journal club next week will be lead by {leadnext}.
 
 The following week {leadnextnext} will lead discussions with a paper.
 
@@ -81,16 +87,9 @@ If you are unable to present a paper, check the Journal club roster and negotiat
     """.format(leadnext=jchosts.people[total_wkcount % (jchosts.shape[0])],leadnextnext=jchosts.people[(total_wkcount+1) % (jchosts.shape[0])])
     userId_set = 'me'
 
-    # Make the message
-    mkMessage = create_message(sender, to, cc, subject, message_text)
-    # Send the message
-    send_message(service,"me",mkMessage)
 
-# If modifying these scopes, delete your previously saved credentials
-# at ~/.credentials/gmail-python-quickstart.json
-SCOPES = 'https://www.googleapis.com/auth/gmail.send'
-CLIENT_SECRET_FILE = 'client_secret.json'
-APPLICATION_NAME = 'JCTsar'
+    mkMessage = create_message(sender, to, cc, subject, message_text)  # Make the message
+    send_message(service,"me",mkMessage) # Send the message
 
 
 def get_credentials():
@@ -121,6 +120,7 @@ def get_credentials():
         print('Storing credentials to ' + credential_path)
     return credentials
 
+
 def create_message(sender, to, cc, subject, message_text):
   """Create a message for an email.
 
@@ -147,6 +147,7 @@ def create_message(sender, to, cc, subject, message_text):
       print('')
 
   return {'raw': base64.urlsafe_b64encode(message.as_string())}
+
 
 def send_message(service, user_id, message):
   """Send an email message.
