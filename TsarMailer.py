@@ -29,8 +29,11 @@ except ImportError:
 debug = 1
 dryrun = 1
 
+jchostgsheet = 'https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/pub?gid=0&single=true&output=csv'
+
 
 phaseAdj = 3 # Add and arbitrary phase shift (integer) to offset additions/subtractions from the list
+
 
 
 
@@ -42,17 +45,17 @@ def main():
     #TODO: change to dt.datetime.now()
     ListStartDate = datetime(2017, 1, 1)
     CurrentDate = dt.datetime.now() #datetime(2017,7,16) # Dummy test date
-    CurrentDate = datetime(2017,5,18)
-    AbsolutePhase = (CurrentDate-ListStartDate).days/7
-    NumSkips = np.sum(pd.to_datetime(vetodates.vetodate)<= CurrentDate)
-
+    # CurrentDate = datetime(2017,5,18)
+    absolute_phase = (CurrentDate-ListStartDate).days/7
+    num_skips = np.sum(pd.to_datetime(vetodates.vetodate)<= CurrentDate)
+    print("numberof skips {}".format(num_skips))
     # Workout total weeks start date, ommitting skips and adding manual phase adjust then modulo against length of list of people
-    Listphase = (AbsolutePhase - NumSkips + phaseAdj) % (jchosts.shape[0]-1)
+    Listphase = (absolute_phase - num_skips + phaseAdj) % (jchosts.shape[0]-1)
 
 
     if debug == 1:
-        print("Absolute phase = {}".format(AbsolutePhase))
-        print("Number of weeks skipped due to holidays = {}".format(NumSkips))
+        print("Absolute phase = {}".format(absolute_phase))
+        print("Number of weeks skipped due to holidays = {}".format(num_skips))
         print("Manual adjust twiddle factor  = {}".format(phaseAdj))
 
         # print("Dates that are vetoed:")
