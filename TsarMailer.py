@@ -18,6 +18,9 @@ from email.mime.text import MIMEText
 import pandas as pd # Tools for opening csv files
 import numpy as np
 
+from StringIO import StringIO
+import requests
+
 try:
     import argparse
     flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
@@ -25,45 +28,36 @@ except ImportError:
     flags = None
 
 
-## Test flags these will be replaced with python option flags
+# Flags for debug and disabling the actual email send
 debug = 1
-dryrun = 1
+dryrun = 0
 
 jchostgsheet = 'https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/pub?gid=0&single=true&output=csv'
 
 
-phaseAdj = 3 # Add and arbitrary phase shift (integer) to offset additions/subtractions from the list
-
-
-
-
 def main():
-    # Load names and dates to veto
-    jchosts = pd.read_csv('jchosts.csv', header=0, index_col=False)
-    vetodates = pd.read_csv('vetodates.csv', header=0, index_col=False)
+    r = requests.get(jchostgsheet)  # Grab csv version of google spreadsheet name list
+    jchosts = pd.read_csv(StringIO(r.text), index_col=0, header=0)  # refactor into pandas array
 
-    #TODO: change to dt.datetime.now()
-    ListStartDate = datetime(2017, 1, 1)
-    CurrentDate = dt.datetime.now() #datetime(2017,7,16) # Dummy test date
-    # CurrentDate = datetime(2017,5,18)
-    absolute_phase = (CurrentDate-ListStartDate).days/7
-    num_skips = np.sum(pd.to_datetime(vetodates.vetodate)<= CurrentDate)
-    print("numberof skips {}".format(num_skips))
-    # Workout total weeks start date, ommitting skips and adding manual phase adjust then modulo against length of list of people
-    Listphase = (absolute_phase - num_skips + phaseAdj) % (jchosts.shape[0]-1)
+    vetodates = pd.read_csv('vetodates.csv', header=0, index_col=False)  # grab local copy of dates to veto
 
+    phase_adj = jchosts.phase_adj[0]  # grab phase adjust factor from google spreadsheet
+
+    ListStartDate = datetime(2017, 1, 1)  # set reference start date to value
+    CurrentDate = dt.datetime.now()  # get current date as of today
+    # CurrentDate = datetime(2017,5,18) #dummy debug date uncomment for testing
+    absolute_weekcount = (CurrentDate-ListStartDate).days/7  # compute total number of weeks from start date to now
+    num_skips = np.sum(pd.to_datetime(vetodates.vetodate)<= CurrentDate)  # take list of veto dates and count how many to today
+
+    total_wkcount = (absolute_weekcount - num_skips + phase_adj) # Work out total number of weeks, less holidays and an abitrary phase factor
 
     if debug == 1:
-        print("Absolute phase = {}".format(absolute_phase))
+        print("Absolute number of weeks = {}".format(absolute_weekcount))
         print("Number of weeks skipped due to holidays = {}".format(num_skips))
-        print("Manual adjust twiddle factor  = {}".format(phaseAdj))
-
-        # print("Dates that are vetoed:")
-        # print(vetodates)
-
-    print(Listphase)
-
-    print(jchosts['people'][Listphase])
+        print("Manual adjust week phase  = {}".format(phase_adj))
+        print("Listphase = {}".format(total_wkcount % jchosts.shape[0]))
+        print("Next person to lead is {}".format(jchosts.people[total_wkcount % (jchosts.shape[0])]))
+        print("Person after that is {}".format(jchosts.people[(total_wkcount +1) % (jchosts.shape[0])]))
 
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
@@ -73,27 +67,24 @@ def main():
     # Now set up email to send to JC list
     sender = 'JournalClubRoboTsar@gmail.com'
     to = 'wadean@gmail.com'
-    cc = (jchosts['email'][Listphase] + "; " + jchosts['email'][Listphase+ 1] + "; " + "awade@ligo.caltech.edu")
+    cc = ''
+    # cc = (jchosts.email[total_wkcount % jchosts.shape[0]] + "; " + jchosts.email[(total_wkcount+ 1) % jchosts.shape[0]] + "; " + "awade@ligo.caltech.edu")
     subject = 'Upcoming week: journal club presenters'
     message_text = """
-    Journal club this week will be lead by {leadnext}.
-    
-    The following week {leadnextnext} will lead discussions with a paper.
-    
-    By Tuesday please choose a paper, reply to this list with a link and post it to the 40m wiki here: https://wiki-40m.ligo.caltech.edu/Journal_Club
-    
-    If you are unable to present a paper, check the Journal club roster at the above link and negogiate with someone for a swap. Reply to this list with the change so that the list order can be updated.
-    """.format(leadnext=jchosts['people'][Listphase],leadnextnext=jchosts['people'][Listphase+1])
+Journal club this week will be lead by {leadnext}.
+
+The following week {leadnextnext} will lead discussions with a paper.
+
+By Tuesday please choose a paper, reply to this list with a link and post it to the 40m wiki here: https://wiki-40m.ligo.caltech.edu/Journal_Club
+
+If you are unable to present a paper, check the Journal club roster and negotiate with someone for a swap. The roster can be found here: https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/edit?usp=sharing
+    """.format(leadnext=jchosts.people[total_wkcount % (jchosts.shape[0])],leadnextnext=jchosts.people[(total_wkcount+1) % (jchosts.shape[0])])
     userId_set = 'me'
 
     # Make the message
-    # mkMessage = create_message(msgsender, tousr, cc, msgsubject, message_text)
     mkMessage = create_message(sender, to, cc, subject, message_text)
     # Send the message
     send_message(service,"me",mkMessage)
-
-
-
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/gmail-python-quickstart.json
