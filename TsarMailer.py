@@ -77,7 +77,7 @@ def main():
     cc = (jchosts.email[total_wkcount % jchosts.shape[0]] + "; " + jchosts.email[(total_wkcount+ 1) % jchosts.shape[0]] + "; " + "awade@ligo.caltech.edu")
     subject = 'Upcoming week: journal club presenters'
     message_text = """
-Journal club next week will be lead by {leadnext}.
+Journal club this week will be lead by {leadnext}.
 
 The following week {leadnextnext} will lead discussions with a paper.
 
