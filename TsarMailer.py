@@ -1,3 +1,4 @@
+#!/Users/awade/SVN/RoboTsar/env/bin/python
 from __future__ import print_function
 import httplib2
 import os
@@ -45,7 +46,7 @@ def main():
     r = requests.get(jchostgsheet)  # Grab csv version of google spreadsheet name list
     jchosts = pd.read_csv(StringIO(r.text), index_col=0, header=0)  # refactor into pandas array
 
-    vetodates = pd.read_csv('vetodates.csv', header=0, index_col=False)  # grab local copy of dates to veto
+    vetodates = pd.read_csv('/Users/awade/SVN/RoboTsar/vetodates.csv', header=0, index_col=False)  # grab local copy of dates to veto
 
     phase_adj = jchosts.phase_adj[0]  # grab phase adjust factor from google spreadsheet
 
