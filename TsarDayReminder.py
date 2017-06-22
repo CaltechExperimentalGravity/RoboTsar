@@ -1,4 +1,9 @@
 #!/Users/awade/SVN/RoboTsar/env/bin/python
+
+"""
+This script sends a reminder on the day of Journal club with a message reminding people that it is on
+
+"""
 from __future__ import print_function
 import httplib2
 import os
@@ -28,18 +33,26 @@ try:
 except ImportError:
     flags = None
 
+### Configurable options ###
 
 # Flags for debug and disabling the actual email send
 debug = 1
 dryrun = 0
 
-jchostgsheet = 'https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/pub?gid=0&single=true&output=csv'
+jchostgsheet = 'https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/pub?gid=0&single=true&output=csv' # http location of list of people to pick from
+ListStartDate = datetime(2017, 1, 1)  # set reference start date to value
+
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/gmail-python-quickstart.json
 SCOPES = 'https://www.googleapis.com/auth/gmail.send'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'JCTsar'
+
+
+### End configurable options ###
+
+
 
 
 def main():
@@ -50,7 +63,6 @@ def main():
 
     phase_adj = jchosts.phase_adj[0]  # grab phase adjust factor from google spreadsheet
 
-    ListStartDate = datetime(2017, 1, 1)  # set reference start date to value
     CurrentDate = dt.datetime.now()  # get current date as of today
     # CurrentDate = datetime(2017,5,28) #dummy debug date uncomment for testing
     absolute_weekcount = (CurrentDate-ListStartDate).days/7  # compute total number of weeks from start date to now
@@ -73,19 +85,19 @@ def main():
 
     # Now set up email to send to JC list
     sender = 'JournalClubRoboTsar@gmail.com'
-    # to = 'wadean@gmail.com'
-    to = 'ligo-journal-club@caltech.edu'
-    # cc = ''
-    cc = (jchosts.email[total_wkcount % jchosts.shape[0]] + "; " + jchosts.email[(total_wkcount+ 1) % jchosts.shape[0]] + "; " + "awade@ligo.caltech.edu")
-    subject = 'Upcoming week: journal club presenters'
+    to = 'wadean@gmail.com'
+    # to = 'ligo-journal-club@caltech.edu'
+    cc = ''
+    # cc = (jchosts.email[total_wkcount % jchosts.shape[0]] + "; " + jchosts.email[(total_wkcount+ 1) % jchosts.shape[0]] + "; " + "awade@ligo.caltech.edu")
+    subject = 'Reminder: LIGO journal club today 3.00 pm'
     message_text = """
-Journal club this week will be lead by {leadnext}.
+Just a friendly reminder that journal club is on today at 3.00 pm in the West Bridge 3rd floor seminar room 351. The SURFs are occupying our usual meeting space.
 
-The following week {leadnextnext} will lead discussions with a paper.
+{leadnext} will be leading discussion. Links this week's articles can be found at: https://wiki-40m.ligo.caltech.edu/Journal_Club
 
-By Tuesday please choose a paper, reply to this list with a link and post it to the 40m wiki here: https://wiki-40m.ligo.caltech.edu/Journal_Club
+---
+This is an automatically generated reminder.
 
-If you are unable to present a paper, check the Journal club roster and negotiate with someone for a swap. The roster can be found here: https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/edit?usp=sharing
     """.format(leadnext=jchosts.people[total_wkcount % (jchosts.shape[0])],leadnextnext=jchosts.people[(total_wkcount+1) % (jchosts.shape[0])])
     userId_set = 'me'
 
