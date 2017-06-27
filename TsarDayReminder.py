@@ -85,10 +85,10 @@ def main():
 
     # Now set up email to send to JC list
     sender = 'JournalClubRoboTsar@gmail.com'
-    to = 'wadean@gmail.com'
-    # to = 'ligo-journal-club@caltech.edu'
-    cc = ''
-    # cc = (jchosts.email[total_wkcount % jchosts.shape[0]] + "; " + jchosts.email[(total_wkcount+ 1) % jchosts.shape[0]] + "; " + "awade@ligo.caltech.edu")
+    # to = 'wadean@gmail.com'
+    to = 'ligo-journal-club@caltech.edu'
+    # cc = ''
+    cc = (jchosts.email[total_wkcount % jchosts.shape[0]])
     subject = 'Reminder: LIGO journal club today 3.00 pm'
     message_text = """
 Just a friendly reminder that journal club is on today at 3.00 pm in the West Bridge 3rd floor seminar room 351. The SURFs are occupying our usual meeting space.
