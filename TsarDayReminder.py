@@ -83,6 +83,7 @@ def main():
     service = discovery.build('gmail', 'v1', http=http)
 
 
+
     # Now set up email to send to JC list
     sender = 'JournalClubRoboTsar@gmail.com'
     # to = 'wadean@gmail.com'
