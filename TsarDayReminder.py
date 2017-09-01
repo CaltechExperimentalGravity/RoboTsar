@@ -92,7 +92,7 @@ def main():
     cc = (jchosts.email[total_wkcount % jchosts.shape[0]] + "; " + "awade@ligo.caltech.edu")
     subject = 'Reminder: LIGO journal club today 3.00 pm'
     message_text = """
-Just a friendly reminder that journal club is on today at 3.00 pm in the West Bridge 3rd floor seminar room 351. The SURFs are occupying our usual meeting space.
+Just a friendly reminder that journal club is on today at 3.00 pm in the West Bridge 2nd floor seminar room 265. 
 
 {leadnext} will be leading discussion. Links this week's articles can be found at: https://wiki-40m.ligo.caltech.edu/Journal_Club
 
