@@ -1,4 +1,4 @@
-#!/Users/awade/SVN/RoboTsar/env/bin/python
+#!/Users/awade/Git/RoboTsar/env/bin/python
 
 """
 This script sends a reminder on the day of Journal club with a message reminding people that it is on
@@ -59,7 +59,7 @@ def main():
     r = requests.get(jchostgsheet)  # Grab csv version of google spreadsheet name list
     jchosts = pd.read_csv(StringIO(r.text), index_col=0, header=0)  # refactor into pandas array
 
-    vetodates = pd.read_csv('/Users/awade/SVN/RoboTsar/vetodates.csv', header=0, index_col=False)  # grab local copy of dates to veto
+    vetodates = pd.read_csv('/Users/awade/Git/RoboTsar/vetodates.csv', header=0, index_col=False)  # grab local copy of dates to veto
 
     phase_adj = jchosts.phase_adj[0]  # grab phase adjust factor from google spreadsheet
 
