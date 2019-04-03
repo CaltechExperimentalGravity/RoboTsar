@@ -102,44 +102,55 @@ def main(vetodateFile=None, jchostgsheet=None,
     # Compute total number of weeks from start date to now
     absolute_weekcount = (CurrentDate-ListStartDate).days/7
 
-    phase_adj = jchosts.phase_adj[0]  # phase adj num from google spreadsheet
-
-    # take list of veto dates and count how many to today
+    # grab list of veto dates and count how many to today
     num_skips = np.sum(pd.to_datetime(vetodates.vetodate) <= CurrentDate)
+
+    # phase adj num from google spreadsheet
+    phase_adj = jchosts.phase_adj[0]
 
     # Work out position in list given veto dates and abitrary phase factor
     total_wkcount = (absolute_weekcount - num_skips + phase_adj)
+
+    JCHostListPosition = total_wkcount % jchosts.shape[0]
+    JCHostListPosition_next = (total_wkcount + 1) % jchosts.shape[0]
 
     if debug:  # report when in debug mode
         print("Absolute number of weeks = {}".format(absolute_weekcount))
         print("Number of weeks skipped due to holidays = {}".format(num_skips))
         print("Manual adjust week phase  = {}".format(phase_adj))
         print("Listphase = {}".format(total_wkcount % jchosts.shape[0]))
-        print("Next person to lead is {}".format(jchosts.people[total_wkcount % (jchosts.shape[0])]))
-        print("Person after that is {}".format(jchosts.people[(total_wkcount +1) % (jchosts.shape[0])]))
+        print("Next person to lead is {}".format(
+            jchosts.people[total_wkcount % (jchosts.shape[0])]))
+        print("Person after that is {}".format(
+            jchosts.people[(total_wkcount + 1) % (jchosts.shape[0])]))
+
 
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('gmail', 'v1', http=http)
 
+    # choose alert type and assemble email content accordingly
+    if True:
+        # Now set up email to send to JC list
+        sender = 'JournalClubRoboTsar@gmail.com'
+        to = 'wadean@gmail.com'
+        # to = 'ligo-journal-club@caltech.edu'
+        cc = (jchosts.email[JCHostListPosition] + "; " +
+              jchosts.email[JCHostListPosition_next] + "; " +
+              "awade@ligo.caltech.edu")
+        # cc = ''
+        subject = 'Upcoming week: journal club presenters'
+        message_text = """
+        Journal club this week will be lead by {leadnext}.
 
-    # Now set up email to send to JC list
-    sender = 'JournalClubRoboTsar@gmail.com'
-    # to = 'wadean@gmail.com'
-    to = 'ligo-journal-club@caltech.edu'
-    # cc = ''
-    cc = (jchosts.email[total_wkcount % jchosts.shape[0]] + "; " + jchosts.email[(total_wkcount+ 1) % jchosts.shape[0]] + "; " + "awade@ligo.caltech.edu")
-    subject = 'Upcoming week: journal club presenters'
-    message_text = """
-Journal club this week will be lead by {leadnext}.
+        The following week {leadnextnext} will lead discussions with a paper.
 
-The following week {leadnextnext} will lead discussions with a paper.
+        By Tuesday please choose a paper, reply to this list with a link and post it to the 40m wiki here: https://wiki-40m.ligo.caltech.edu/Journal_Club
 
-By Tuesday please choose a paper, reply to this list with a link and post it to the 40m wiki here: https://wiki-40m.ligo.caltech.edu/Journal_Club
-
-If you are unable to present a paper, check the Journal club roster and negotiate with someone for a swap. The roster can be found here: https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/edit?usp=sharing
-    """.format(leadnext=jchosts.people[total_wkcount % (jchosts.shape[0])],leadnextnext=jchosts.people[(total_wkcount+1) % (jchosts.shape[0])])
-    userId_set = 'me'
+        If you are unable to present a paper, check the Journal club roster and negotiate with someone for a swap. The roster can be found here: https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/edit?usp=sharing
+        """.format(leadnext=jchosts.people[JCHostListPosition],
+                   leadnextnext=jchosts.people[JCHostListPosition_next])
+        # delete? # userId_set = 'me'
 
 
     mkMessage = create_message(sender, to, cc, subject, message_text)  # Make the message
@@ -173,34 +184,6 @@ def get_credentials():
             credentials = tools.run(flow, store)
         print('Storing credentials to ' + credential_path)
     return credentials
-
-
-def create_message(sender, to, cc, subject, message_text):
-  """Create a message for an email.
-
-  Args:
-    sender: Email address of the sender.
-    to: Email address of the receiver.
-    subject: The subject of the email message.
-    message_text: The text of the email message.
-
-  Returns:
-    An object containing a base64url encoded email object.
-  """
-  message = MIMEText(message_text)
-  message['to'] = to
-  message['cc'] = cc
-  message['from'] = sender
-  message['subject'] = subject
-
-  if debug == 1:
-      print('')
-      print('--- Message to send ---')
-      print(message)
-      print('--- End message ---')
-      print('')
-
-  return {'raw': base64.urlsafe_b64encode(message.as_string())}
 
 
 def send_message(service, user_id, message):
