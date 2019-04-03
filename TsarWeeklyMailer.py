@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 import datetime as dt
 
-#Import packages used for email sending
+# Import packages used for email sending
 from apiclient import discovery
 from apiclient import errors
 
@@ -29,12 +29,47 @@ except ImportError:
     flags = None
 
 
+
+
+def grabInputArgs():
+    ''' Function for grabbing arguments parsed from
+        cmd launch'''
+
+    parser = argparse.ArgumentParser(
+        description="Python script for sending reminders"
+                     "to journal club leads to present "
+                     "a paper")
+    #parser.add_argument(
+        #'configfile',
+        #type=str,
+        #help="Here you must enter a config .ini file name and location that "
+             #"contains info about the elog to be polled and a pointer to the "
+             #"last known address so alerts sent to user are the latest")
+    parser.add_argument(
+        '--debug',
+        help="activate debug mode of script for verbose"
+             " feedback on action of script.",
+        action='store_true')
+    parser.add_argument(
+        '--dryrun',
+        help="run script without sending email"
+        action='store_true')
+    return parser.parse_args()
+
+# Configurable variables
+vetodateFile = '/Users/awade/Git/RoboTsar/vetodates.csv'
+ListStartDate = datetime(2019, 1, 1)  # set reference start date to value
+
 # Flags for debug and disabling the actual email send
-debug = 1
-dryrun = 0
+debug = True
+dryrun = 1
 
-jchostgsheet = 'https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/pub?gid=0&single=true&output=csv'
+jchostgsheet = ('https://docs.google.com/spreadsheets/d/'
+                '1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/'
+                'pub?gid=0&single=true&output=csv')
+#jchostgsheet = 'https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/pub?gid=0&single=true&output=csv'
 
+# OLD GMAIL API TO BE DEPRECIATED FROM THIS SCRIPT
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/gmail-python-quickstart.json
 SCOPES = 'https://www.googleapis.com/auth/gmail.send'
@@ -42,23 +77,40 @@ CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'JCTsar'
 
 
-def main():
-    r = requests.get(jchostgsheet)  # Grab csv version of google spreadsheet name list
-    jchosts = pd.read_csv(StringIO(r.text), index_col=0, header=0)  # refactor into pandas array
+def main(vetodateFile=None, jchostgsheet=None,
+         ListStartDate=datetime(2019, 1, 1)):
 
-    vetodates = pd.read_csv('/Users/awade/Git/RoboTsar/vetodates.csv', header=0, index_col=False)  # grab local copy of dates to veto
+    # type and checking, throw assert errors on failure
+    assert isinstance(vetodateFile, str), "Argument must be string"
+    assert os.path.exists(vetodateFile), "vetodateFile not found in path"
+    assert isinstance(jchostgsheet, str), "Argument must be string"
+    assert os.path.exists(jchostgsheet), "vetodateFile not found in path"
 
-    phase_adj = jchosts.phase_adj[0]  # grab phase adjust factor from google spreadsheet
+    CurrentDate = dt.datetime.now()  # get current date at time of script run
 
-    ListStartDate = datetime(2017, 1, 1)  # set reference start date to value
-    CurrentDate = dt.datetime.now()  # get current date as of today
-    # CurrentDate = datetime(2017,5,28) #dummy debug date uncomment for testing
-    absolute_weekcount = (CurrentDate-ListStartDate).days/7  # compute total number of weeks from start date to now
-    num_skips = np.sum(pd.to_datetime(vetodates.vetodate)<= CurrentDate)  # take list of veto dates and count how many to today
+    # Get csv version of google spreadsheet name list
+    r = requests.get(jchostgsheet)
+    jchosts = pd.read_csv(StringIO(r.text),
+                          index_col=0,
+                          header=0)  # make pandas array
 
-    total_wkcount = (absolute_weekcount - num_skips + phase_adj) # Work out total number of weeks, less holidays and an abitrary phase factor
+    # grab local copy of dates to veto
+    vetodates = pd.read_csv(vetodateFile,
+                            header=0,
+                            index_col=False)
 
-    if debug == 1:
+    # Compute total number of weeks from start date to now
+    absolute_weekcount = (CurrentDate-ListStartDate).days/7
+
+    phase_adj = jchosts.phase_adj[0]  # phase adj num from google spreadsheet
+
+    # take list of veto dates and count how many to today
+    num_skips = np.sum(pd.to_datetime(vetodates.vetodate) <= CurrentDate)
+
+    # Work out position in list given veto dates and abitrary phase factor
+    total_wkcount = (absolute_weekcount - num_skips + phase_adj)
+
+    if debug:  # report when in debug mode
         print("Absolute number of weeks = {}".format(absolute_weekcount))
         print("Number of weeks skipped due to holidays = {}".format(num_skips))
         print("Manual adjust week phase  = {}".format(phase_adj))
@@ -176,7 +228,89 @@ def send_message(service, user_id, message):
   elif dryrun == 1:
       print('No message sent')
 
+def sendElogEmail(config, postMessage, postID,
+                  postSubject, postAuthor, dryrun=False):
+    # todo: remove config.toAddress[0] and replace with list compatible parsing
+    print('Triggered email send post [{postNum}]...'.format(postNum=postID))
+    msg = create_message(
+        config.fromAddress,
+        config.toAddress[0],
+        '',
+        '[{LBn} Elog] new post {pID} '
+        'from {pAU}: {pSB}'.format(pID=postID,
+                                   pSB=postSubject,
+                                   pAU=postAuthor,
+                                   LBn=config.elog_logbookname),
+        postMessage)
+    # todo: add subject line truncation
+    if config.port is None:
+        s = smtplib.SMTP(config.host)
+    else:
+        s = smtplib.SMTP(config.host, config.port)
+    s.starttls()
 
-if __name__ == '__main__': # Make it run, bitch
+    if config.credentialsFile is not None:
+        creds = get_credentials(config.credentialsFile)
+        s.login(creds.usr, creds.passw)
+    if dryrun is False:
+        s.sendmail(
+            config.fromAddress,
+            config.toAddress[0],
+            msg.as_string())
+    else:
+        print("Dry run: executed all steps except final one of sending email.")
+        print("Message that would have been sent:")
+        print(msg.as_string())
+    # todo: add attachment support and ini options to opt up of attachements
+    s.quit()
+    return 1
+
+
+def create_message(sender, to, cc, subject, message_text):
+    """Create a message for an email.
+
+    Args:
+      sender: Email address of the sender.
+      to: Email address of the receiver.
+      subject: The subject of the email message.
+      message_text: The text of the email message.
+
+    Returns:
+      An object containing a base64url encoded email object.
+    """
+    message = MIMEMultipart('alternative')
+    message['to'] = to
+    message['cc'] = cc
+    message['from'] = sender
+    message['subject'] = subject
+
+    plainText = html2text.html2text(message_text)
+    html = message_text
+
+    part1 = MIMEText(plainText, 'plain')
+    part2 = MIMEText(html, 'html')
+    message.attach(part1)
+    message.attach(part2)
+    return message
+
+
+
+
+class get_credentials():
+    """ Gets user credentials from secrets file. """
+    def __init__(self, credentialsFile):
+        """ Generate credential values from file provided. """
+        config = configparser.SafeConfigParser()
+        config.read(credentialsFile)
+
+        self.usr = config.get(
+            "Credentials",
+            "usr")
+        self.passw = config.get(
+            "Credentials",
+            "pass")
+        # todo: add more configuration options for authentication and usage
+
+
+if __name__ == '__main__':  # Make it run, bitch
     main()
-
