@@ -1,34 +1,32 @@
 #!/Users/awade/Git/RoboTsar/env/bin/python
 from __future__ import print_function
-import httplib2
 import os
 from datetime import datetime
 import datetime as dt
+import argparse
+import configparser
 
-# Import packages used for email sending
-from apiclient import discovery
-from apiclient import errors
 
-from oauth2client import client
-from oauth2client import tools
-from oauth2client.file import Storage
-
-import base64
+import smtplib
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import html2text
 
-import pandas as pd # Tools for opening csv files
+import pandas as pd  # Tools for opening csv files
 import numpy as np
 
 from StringIO import StringIO
 import requests
 
-try:
-    import argparse
-    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
-except ImportError:
-    flags = None
-
-
+# Configurable variables
+vetodateFile = '/Users/awade/Git/RoboTsar/vetodates.csv'
+credentialsFile = '/Users/awade/Git/RoboTsar/.credentials/JCTcred.secret'
+jchostgsheet = ('https://docs.google.com/spreadsheets/d/'
+                '1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/'
+                'pub?gid=0&single=true&output=csv')
+ListStartDate = datetime(2018, 12, 30)
+# this is set for 2019, careful to include the full week or the Friday
+# reminders will be out of sink with Sunday reminders.
 
 
 def grabInputArgs():
@@ -37,14 +35,19 @@ def grabInputArgs():
 
     parser = argparse.ArgumentParser(
         description="Python script for sending reminders"
-                     "to journal club leads to present "
-                     "a paper")
-    #parser.add_argument(
-        #'configfile',
-        #type=str,
-        #help="Here you must enter a config .ini file name and location that "
-             #"contains info about the elog to be polled and a pointer to the "
-             #"last known address so alerts sent to user are the latest")
+                    "to journal club leads to present "
+                    "a paper")
+    parser.add_argument(
+        '--weeklyreminder',
+        help="Send weekly reminder directly to this weeks presenter and the "
+             " next week's presenter (advanced notice).",
+        action='store_true')
+    parser.add_argument(
+        '--dayreminder',
+        help="Send reminder on day to full journal club list.  Also cc'ed is "
+             "the presenter for that day. See text in main() of script to "
+             "edit details of text.",
+        action='store_true')
     parser.add_argument(
         '--debug',
         help="activate debug mode of script for verbose"
@@ -52,29 +55,9 @@ def grabInputArgs():
         action='store_true')
     parser.add_argument(
         '--dryrun',
-        help="run script without sending email"
+        help="run script without sending email",
         action='store_true')
     return parser.parse_args()
-
-# Configurable variables
-vetodateFile = '/Users/awade/Git/RoboTsar/vetodates.csv'
-ListStartDate = datetime(2019, 1, 1)  # set reference start date to value
-
-# Flags for debug and disabling the actual email send
-debug = True
-dryrun = 1
-
-jchostgsheet = ('https://docs.google.com/spreadsheets/d/'
-                '1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/'
-                'pub?gid=0&single=true&output=csv')
-#jchostgsheet = 'https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/pub?gid=0&single=true&output=csv'
-
-# OLD GMAIL API TO BE DEPRECIATED FROM THIS SCRIPT
-# If modifying these scopes, delete your previously saved credentials
-# at ~/.credentials/gmail-python-quickstart.json
-SCOPES = 'https://www.googleapis.com/auth/gmail.send'
-CLIENT_SECRET_FILE = 'client_secret.json'
-APPLICATION_NAME = 'JCTsar'
 
 
 def main(vetodateFile=None, jchostgsheet=None,
@@ -84,11 +67,11 @@ def main(vetodateFile=None, jchostgsheet=None,
     assert isinstance(vetodateFile, str), "Argument must be string"
     assert os.path.exists(vetodateFile), "vetodateFile not found in path"
     assert isinstance(jchostgsheet, str), "Argument must be string"
-    assert os.path.exists(jchostgsheet), "vetodateFile not found in path"
 
     args = grabInputArgs()  # import cmdline/bash argments
 
     CurrentDate = dt.datetime.now()  # get current date at time of script run
+    # CurrentDate = datetime(2019, 3, 31)
 
     # Get csv version of google spreadsheet name list
     r = requests.get(jchostgsheet)
@@ -113,42 +96,88 @@ def main(vetodateFile=None, jchostgsheet=None,
     # Work out position in list given veto dates and abitrary phase factor
     total_wkcount = (absolute_weekcount - num_skips + phase_adj)
 
+    # compute position in the list with modulo list length
     JCHostListPosition = total_wkcount % jchosts.shape[0]
     JCHostListPosition_next = (total_wkcount + 1) % jchosts.shape[0]
 
-    if debug:  # report when in debug mode
+    if args.debug:  # report when in debug mode
         print("Absolute number of weeks = {}".format(absolute_weekcount))
         print("Number of weeks skipped due to holidays = {}".format(num_skips))
         print("Manual adjust week phase  = {}".format(phase_adj))
         print("Listphase = {}".format(total_wkcount % jchosts.shape[0]))
         print("Next person to lead is {}".format(
-            jchosts.people[total_wkcount % (jchosts.shape[0])]))
+            jchosts.people[JCHostListPosition]))
         print("Person after that is {}".format(
-            jchosts.people[(total_wkcount + 1) % (jchosts.shape[0])]))
+            jchosts.people[JCHostListPosition_next]))
 
     # choose alert type and assemble email content accordingly
-    if True:
+    if args.weeklyreminder:
+        # Now set up email to send to JC list
+        sender = 'JournalClubRoboTsar@gmail.com'
+        # to = jchosts.email[JCHostListPosition]
+        to = 'wadean@gmail.com'
+        # cc = (jchosts.email[JCHostListPosition_next] + '; ' +
+        #       'JournalClubRoboTsar@gmail.com' + '; ' +
+        #       'awade@ligo.caltech.edu')
+        cc = ('wadean+JC1@gmail.com' + '; ' +
+              'wadean+JC2@gmail.com' + '; ' +
+              'awade@ligo.caltech.edu')
+        subject = 'Upcoming week: journal club presenters'
+        message_text = '''
+<p>Journal club this week will be lead by {leadnext}.</p>
+
+
+<p>The following week {leadnextnext} will lead discussions with a paper.</p>
+
+
+<p>By Tuesday please choose a paper, reply to this list with a link and post it
+ to the 40m wiki here:
+ <a href="https://wiki-40m.ligo.caltech.edu/Journal_Club">
+ https://wiki-40m.ligo.caltech.edu/Journal_Club<a>.</p>
+
+<p>If you are unable to present a paper, check the Journal club roster and
+ negotiate with someone for a swap. The roster can be found here:
+<a href="https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/edit?usp=sharing">
+ LIGO Journal Club Hosts List</a>.</p>
+        '''.format(leadnext=jchosts.people[JCHostListPosition],
+                   leadnextnext=jchosts.people[JCHostListPosition_next])
+
+        sendEmail(sender=sender, to=to, cc=cc,
+                  subject=subject, message_text=message_text,
+                  host='smtp.gmail.com', port='587',
+                  credentialsFile=credentialsFile, dryrun=args.dryrun)
+
+    if args.dayreminder:
         # Now set up email to send to JC list
         sender = 'JournalClubRoboTsar@gmail.com'
         # to = 'ligo-journal-club@caltech.edu'
         to = 'wadean@gmail.com'
-        # cc = (jchosts.email[JCHostListPosition] + "; " +
-        #       jchosts.email[JCHostListPosition_next] + "; " +
-        #       "awade@ligo.caltech.edu")
-        cc = ("wadean+JC1@gmail.com" + "; " +
-              "wadean+JC2@gmail.com" + "; " +
+        # cc = (jchosts.email[JCHostListPosition] + '; ' +
+        #       jchosts.email[JCHostListPosition_next] + '; ' +
+        #       'JournalClubRoboTsar@gmail.com' + '; ' +
+        #       'awade@ligo.caltech.edu')
+        cc = ("wadean+JC1day@gmail.com" + "; " +
+              "wadean+JC2day@gmail.com" + "; " +
               "awade@ligo.caltech.edu")
-        subject = 'Upcoming week: journal club presenters'
-        message_text = """
-        Journal club this week will be lead by {leadnext}.
+        subject = 'Reminder: LIGO journal club today 3.00 pm'
+        message_text = '''
+<p>Just a friendly reminder that journal club is on today at 3.00 pm in the
+West Bridge 2nd floor seminar room 265.</p>
 
-        The following week {leadnextnext} will lead discussions with a paper.
+<p>{leadnext} will be leading the discussion. Links this week's articles can be
+found at: <a href="https://wiki-40m.ligo.caltech.edu/Journal_Club">
+https://wiki-40m.ligo.caltech.edu/Journal_Club<a>.</p>
 
-        By Tuesday please choose a paper, reply to this list with a link and post it to the 40m wiki here: https://wiki-40m.ligo.caltech.edu/Journal_Club
+<hr>
 
-        If you are unable to present a paper, check the Journal club roster and negotiate with someone for a swap. The roster can be found here: https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/edit?usp=sharing
-        """.format(leadnext=jchosts.people[JCHostListPosition],
+<p>This is an automatically generated reminder.</p>
+        '''.format(leadnext=jchosts.people[JCHostListPosition],
                    leadnextnext=jchosts.people[JCHostListPosition_next])
+
+        sendEmail(sender=sender, to=to, cc=cc,
+                  subject=subject, message_text=message_text,
+                  host='smtp.gmail.com', port='587',
+                  credentialsFile=credentialsFile, dryrun=args.dryrun)
 
 
 def sendEmail(sender='', to='', cc='', subject='', message_text='',
@@ -165,20 +194,21 @@ def sendEmail(sender='', to='', cc='', subject='', message_text='',
     # Make smpt object using given host and port details else use defaults
     if host is not None:
         if port is not None:
-            s = smtplib.smtp(config.host, config.port)
+            s = smtplib.SMTP(host, port)
         else:
-            s = smtplib.SMTP(config.host)  # port default to SSL 465
+            s = smtplib.SMTP(host)  # port default to SSL 465
     else:
         s = smtplib.SMTP()  # Case host not given, use localhost
+    s.starttls()
 
     if credentialsFile is not None:
-        creds = get_credentials(config.credentialsFile)
+        creds = get_credentials(credentialsFile)
         s.login(creds.usr, creds.passw)
 
     if dryrun is False:
         s.sendmail(
             sender,
-            toAddress + "; " + cc,
+            to + "; " + cc,
             msg.as_string())
     else:
         print("Dry run: executed all steps except final one of sending email.")
@@ -222,6 +252,11 @@ class get_credentials():
     """ Gets user credentials from secrets file. """
     def __init__(self, credentialsFile):
         """ Generate credential values from file provided. """
+
+        # type and checking, throw assert errors on failure
+        assert isinstance(credentialsFile, str), "Argument must be string"
+        assert os.path.exists(credentialsFile), "cred File not found in path"
+
         config = configparser.SafeConfigParser()
         config.read(credentialsFile)
 
@@ -235,63 +270,6 @@ class get_credentials():
 
 
 if __name__ == '__main__':  # Make it run, bitch
-    main(vetodateFile=vetodateFile, ListStartDate=ListStartDate)
-
-
-    # mkMessage = create_message(sender, to, cc, subject, message_text)  # Make the message
-    # send_message(service,"me",mkMessage) # Send the message
-
-
-# def get_credentials():
-#     """Gets valid user credentials from storage.
-#
-#     If nothing has been stored, or if the stored credentials are invalid,
-#     the OAuth2 flow is completed to obtain the new credentials.
-#
-#     Returns:
-#         Credentials, the obtained credential.
-#     """
-#     home_dir = os.path.expanduser('~')
-#     credential_dir = os.path.join(home_dir, '.credentials')
-#     if not os.path.exists(credential_dir):
-#         os.makedirs(credential_dir)
-#     credential_path = os.path.join(credential_dir,'gmail-python-quickstart.json')
-#
-#
-#     store = Storage(credential_path)
-#     credentials = store.get()
-#     if not credentials or credentials.invalid:
-#         flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
-#         flow.user_agent = APPLICATION_NAME
-#         if flags:
-#             credentials = tools.run_flow(flow, store, flags)
-#         else: # Needed only for compatibility with Python 2.6
-#             credentials = tools.run(flow, store)
-#         print('Storing credentials to ' + credential_path)
-#     return credentials
-
-
-# def send_message(service, user_id, message):
-#   """Send an email message.
-#
-#   Args:
-#     service: Authorized Gmail API service instance.
-#     user_id: User's email address. The special value "me"
-#     can be used to indicate the authenticated user.
-#     message: Message to be sent.
-#
-#   Returns:
-#     Sent Message.
-#   """
-#
-#   if dryrun == 0:
-#       try:
-#           message = (service.users().messages().send(userId=user_id, body=message).execute())
-#           print('Message Id: %s' % message['id'])
-#           return message
-#
-#       except errors.HttpError, error:
-#           print('An error occurred: %s' % error)
-#
-#   elif dryrun == 1:
-#       print('No message sent')
+    main(vetodateFile=vetodateFile,
+         jchostgsheet=jchostgsheet,
+         ListStartDate=ListStartDate)
