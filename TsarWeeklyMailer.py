@@ -86,6 +86,8 @@ def main(vetodateFile=None, jchostgsheet=None,
     assert isinstance(jchostgsheet, str), "Argument must be string"
     assert os.path.exists(jchostgsheet), "vetodateFile not found in path"
 
+    args = grabInputArgs()  # import cmdline/bash argments
+
     CurrentDate = dt.datetime.now()  # get current date at time of script run
 
     # Get csv version of google spreadsheet name list
@@ -124,21 +126,18 @@ def main(vetodateFile=None, jchostgsheet=None,
         print("Person after that is {}".format(
             jchosts.people[(total_wkcount + 1) % (jchosts.shape[0])]))
 
-
-    credentials = get_credentials()
-    http = credentials.authorize(httplib2.Http())
-    service = discovery.build('gmail', 'v1', http=http)
-
     # choose alert type and assemble email content accordingly
     if True:
         # Now set up email to send to JC list
         sender = 'JournalClubRoboTsar@gmail.com'
-        to = 'wadean@gmail.com'
         # to = 'ligo-journal-club@caltech.edu'
-        cc = (jchosts.email[JCHostListPosition] + "; " +
-              jchosts.email[JCHostListPosition_next] + "; " +
+        to = 'wadean@gmail.com'
+        # cc = (jchosts.email[JCHostListPosition] + "; " +
+        #       jchosts.email[JCHostListPosition_next] + "; " +
+        #       "awade@ligo.caltech.edu")
+        cc = ("wadean+JC1@gmail.com" + "; " +
+              "wadean+JC2@gmail.com" + "; " +
               "awade@ligo.caltech.edu")
-        # cc = ''
         subject = 'Upcoming week: journal club presenters'
         message_text = """
         Journal club this week will be lead by {leadnext}.
@@ -150,107 +149,49 @@ def main(vetodateFile=None, jchostgsheet=None,
         If you are unable to present a paper, check the Journal club roster and negotiate with someone for a swap. The roster can be found here: https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/edit?usp=sharing
         """.format(leadnext=jchosts.people[JCHostListPosition],
                    leadnextnext=jchosts.people[JCHostListPosition_next])
-        # delete? # userId_set = 'me'
 
 
-    mkMessage = create_message(sender, to, cc, subject, message_text)  # Make the message
-    send_message(service,"me",mkMessage) # Send the message
+def sendEmail(sender='', to='', cc='', subject='', message_text='',
+              credentialsFile=None, port=None, host=None, dryrun=False):
+    '''Function constructs and sends email given varioius parameters. '''
 
+    # Generate MIME formated email message with headers for email
+    msg = create_message(sender=sender,
+                         to=to,
+                         cc=cc,
+                         subject=subject,
+                         message_text=message_text)
 
-def get_credentials():
-    """Gets valid user credentials from storage.
-
-    If nothing has been stored, or if the stored credentials are invalid,
-    the OAuth2 flow is completed to obtain the new credentials.
-
-    Returns:
-        Credentials, the obtained credential.
-    """
-    home_dir = os.path.expanduser('~')
-    credential_dir = os.path.join(home_dir, '.credentials')
-    if not os.path.exists(credential_dir):
-        os.makedirs(credential_dir)
-    credential_path = os.path.join(credential_dir,'gmail-python-quickstart.json')
-
-
-    store = Storage(credential_path)
-    credentials = store.get()
-    if not credentials or credentials.invalid:
-        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
-        flow.user_agent = APPLICATION_NAME
-        if flags:
-            credentials = tools.run_flow(flow, store, flags)
-        else: # Needed only for compatibility with Python 2.6
-            credentials = tools.run(flow, store)
-        print('Storing credentials to ' + credential_path)
-    return credentials
-
-
-def send_message(service, user_id, message):
-  """Send an email message.
-
-  Args:
-    service: Authorized Gmail API service instance.
-    user_id: User's email address. The special value "me"
-    can be used to indicate the authenticated user.
-    message: Message to be sent.
-
-  Returns:
-    Sent Message.
-  """
-
-  if dryrun == 0:
-      try:
-          message = (service.users().messages().send(userId=user_id, body=message).execute())
-          print('Message Id: %s' % message['id'])
-          return message
-
-      except errors.HttpError, error:
-          print('An error occurred: %s' % error)
-
-  elif dryrun == 1:
-      print('No message sent')
-
-def sendElogEmail(config, postMessage, postID,
-                  postSubject, postAuthor, dryrun=False):
-    # todo: remove config.toAddress[0] and replace with list compatible parsing
-    print('Triggered email send post [{postNum}]...'.format(postNum=postID))
-    msg = create_message(
-        config.fromAddress,
-        config.toAddress[0],
-        '',
-        '[{LBn} Elog] new post {pID} '
-        'from {pAU}: {pSB}'.format(pID=postID,
-                                   pSB=postSubject,
-                                   pAU=postAuthor,
-                                   LBn=config.elog_logbookname),
-        postMessage)
-    # todo: add subject line truncation
-    if config.port is None:
-        s = smtplib.SMTP(config.host)
+    # Make smpt object using given host and port details else use defaults
+    if host is not None:
+        if port is not None:
+            s = smtplib.smtp(config.host, config.port)
+        else:
+            s = smtplib.SMTP(config.host)  # port default to SSL 465
     else:
-        s = smtplib.SMTP(config.host, config.port)
-    s.starttls()
+        s = smtplib.SMTP()  # Case host not given, use localhost
 
-    if config.credentialsFile is not None:
+    if credentialsFile is not None:
         creds = get_credentials(config.credentialsFile)
         s.login(creds.usr, creds.passw)
+
     if dryrun is False:
         s.sendmail(
-            config.fromAddress,
-            config.toAddress[0],
+            sender,
+            toAddress + "; " + cc,
             msg.as_string())
     else:
         print("Dry run: executed all steps except final one of sending email.")
         print("Message that would have been sent:")
         print(msg.as_string())
-    # todo: add attachment support and ini options to opt up of attachements
     s.quit()
     return 1
 
 
-def create_message(sender, to, cc, subject, message_text):
-    """Create a message for an email.
+def create_message(sender='', to='', cc='', subject='', message_text=''):
+    """Create a MIME structured message for an email. Puts all necessary
+       headers together for the email and generates html + plain text versions
+       of the emails.
 
     Args:
       sender: Email address of the sender.
@@ -267,16 +208,14 @@ def create_message(sender, to, cc, subject, message_text):
     message['from'] = sender
     message['subject'] = subject
 
-    plainText = html2text.html2text(message_text)
+    plainText = html2text.html2text(message_text)  # make plaintext version
     html = message_text
 
-    part1 = MIMEText(plainText, 'plain')
+    part1 = MIMEText(plainText, 'plain')  # included to accommodate pltext req
     part2 = MIMEText(html, 'html')
     message.attach(part1)
     message.attach(part2)
     return message
-
-
 
 
 class get_credentials():
@@ -296,4 +235,63 @@ class get_credentials():
 
 
 if __name__ == '__main__':  # Make it run, bitch
-    main()
+    main(vetodateFile=vetodateFile, ListStartDate=ListStartDate)
+
+
+    # mkMessage = create_message(sender, to, cc, subject, message_text)  # Make the message
+    # send_message(service,"me",mkMessage) # Send the message
+
+
+# def get_credentials():
+#     """Gets valid user credentials from storage.
+#
+#     If nothing has been stored, or if the stored credentials are invalid,
+#     the OAuth2 flow is completed to obtain the new credentials.
+#
+#     Returns:
+#         Credentials, the obtained credential.
+#     """
+#     home_dir = os.path.expanduser('~')
+#     credential_dir = os.path.join(home_dir, '.credentials')
+#     if not os.path.exists(credential_dir):
+#         os.makedirs(credential_dir)
+#     credential_path = os.path.join(credential_dir,'gmail-python-quickstart.json')
+#
+#
+#     store = Storage(credential_path)
+#     credentials = store.get()
+#     if not credentials or credentials.invalid:
+#         flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
+#         flow.user_agent = APPLICATION_NAME
+#         if flags:
+#             credentials = tools.run_flow(flow, store, flags)
+#         else: # Needed only for compatibility with Python 2.6
+#             credentials = tools.run(flow, store)
+#         print('Storing credentials to ' + credential_path)
+#     return credentials
+
+
+# def send_message(service, user_id, message):
+#   """Send an email message.
+#
+#   Args:
+#     service: Authorized Gmail API service instance.
+#     user_id: User's email address. The special value "me"
+#     can be used to indicate the authenticated user.
+#     message: Message to be sent.
+#
+#   Returns:
+#     Sent Message.
+#   """
+#
+#   if dryrun == 0:
+#       try:
+#           message = (service.users().messages().send(userId=user_id, body=message).execute())
+#           print('Message Id: %s' % message['id'])
+#           return message
+#
+#       except errors.HttpError, error:
+#           print('An error occurred: %s' % error)
+#
+#   elif dryrun == 1:
+#       print('No message sent')
