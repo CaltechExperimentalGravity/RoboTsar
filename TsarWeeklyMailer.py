@@ -6,7 +6,6 @@ import datetime as dt
 import argparse
 import configparser
 
-
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
