@@ -18,8 +18,8 @@ from StringIO import StringIO
 import requests
 
 # Configurable variables
-vetodateFile = '/Users/awade/Git/RoboTsar/vetodates.csv'
-credentialsFile = '/Users/awade/Git/RoboTsar/.credentials/JCTcred.secret'
+vetodateFile = './RoboTsar/vetodates.csv'
+credentialsFile = './RoboTsar/.credentials/JCTcred.secret'
 jchostgsheet = ('https://docs.google.com/spreadsheets/d/'
                 '1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/'
                 'pub?gid=0&single=true&output=csv')
