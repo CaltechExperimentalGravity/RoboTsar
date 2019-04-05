@@ -37,7 +37,7 @@ except ImportError:
 
 # Flags for debug and disabling the actual email send
 debug = 1
-dryrun = 0
+dryrun = 1
 
 jchostgsheet = 'https://docs.google.com/spreadsheets/d/1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/pub?gid=0&single=true&output=csv' # http location of list of people to pick from
 ListStartDate = datetime(2017, 1, 1)  # set reference start date to value
