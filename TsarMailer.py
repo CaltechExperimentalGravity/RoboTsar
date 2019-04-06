@@ -85,7 +85,7 @@ def main(vetodateFile=None, jchostgsheet=None,
         sender = 'JournalClubRoboTsar@gmail.com'
         to = jchosts.email[JCHostListPosition]
         cc = (jchosts.email[JCHostListPosition_next] + '; ' +
-              'JournalClubRoboTsar@gmail.com' + '; ' +
+              'ligo-journal-club@caltech.edu' + '; ' +
               'awade@ligo.caltech.edu')
         subject = 'Upcoming week: journal club presenters'
         message_text = '''
@@ -95,7 +95,8 @@ def main(vetodateFile=None, jchostgsheet=None,
 <p>The following week {leadnextnext} will lead discussions with a paper.</p>
 
 
-<p>By Tuesday please choose a paper, reply to this list with a link and post it
+<p>By Tuesday please choose a paper, send an email to the
+ligo-journal-club@caltech.edu list with a link and post it
  to the 40m wiki here:
  <a href="https://wiki-40m.ligo.caltech.edu/Journal_Club">
  https://wiki-40m.ligo.caltech.edu/Journal_Club<a>.</p>
@@ -116,8 +117,7 @@ def main(vetodateFile=None, jchostgsheet=None,
     if args.dayreminder:
         # Now set up email to send to JC list
         sender = 'JournalClubRoboTsar@gmail.com'
-        # to = 'ligo-journal-club@caltech.edu'
-        to = 'wadean@gmail.com'
+        to = 'ligo-journal-club@caltech.edu'
         cc = (jchosts.email[JCHostListPosition] + '; ' +
               jchosts.email[JCHostListPosition_next] + '; ' +
               'JournalClubRoboTsar@gmail.com' + '; ' +
