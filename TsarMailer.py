@@ -1,4 +1,4 @@
-#!/Users/awade/Git/RoboTsar/env/bin/python
+#!/opt/rtcds/caltech/c1/scripts/general/RoboTsar/envTsar/bin/python
 from __future__ import print_function
 import os
 from datetime import datetime
@@ -27,37 +27,6 @@ jchostgsheet = ('https://docs.google.com/spreadsheets/d/'
 ListStartDate = datetime(2018, 12, 30)
 # this is set for 2019, careful to include the full week or the Friday
 # reminders will be out of sink with Sunday reminders.
-
-
-def grabInputArgs():
-    ''' Function for grabbing arguments parsed from
-        cmd launch'''
-
-    parser = argparse.ArgumentParser(
-        description="Python script for sending reminders"
-                    "to journal club leads to present "
-                    "a paper")
-    parser.add_argument(
-        '--weeklyreminder',
-        help="Send weekly reminder directly to this weeks presenter and the "
-             " next week's presenter (advanced notice).",
-        action='store_true')
-    parser.add_argument(
-        '--dayreminder',
-        help="Send reminder on day to full journal club list.  Also cc'ed is "
-             "the presenter for that day. See text in main() of script to "
-             "edit details of text.",
-        action='store_true')
-    parser.add_argument(
-        '--debug',
-        help="activate debug mode of script for verbose"
-             " feedback on action of script.",
-        action='store_true')
-    parser.add_argument(
-        '--dryrun',
-        help="run script without sending email",
-        action='store_true')
-    return parser.parse_args()
 
 
 def main(vetodateFile=None, jchostgsheet=None,
@@ -173,6 +142,37 @@ https://wiki-40m.ligo.caltech.edu/Journal_Club<a>.</p>
                   subject=subject, message_text=message_text,
                   host='smtp.gmail.com', port='587',
                   credentialsFile=credentialsFile, dryrun=args.dryrun)
+
+
+def grabInputArgs():
+    ''' Function for grabbing arguments parsed from
+        cmd launch'''
+
+    parser = argparse.ArgumentParser(
+        description="Python script for sending reminders"
+                    "to journal club leads to present "
+                    "a paper")
+    parser.add_argument(
+        '--weeklyreminder',
+        help="Send weekly reminder directly to this weeks presenter and the "
+             " next week's presenter (advanced notice).",
+        action='store_true')
+    parser.add_argument(
+        '--dayreminder',
+        help="Send reminder on day to full journal club list.  Also cc'ed is "
+             "the presenter for that day. See text in main() of script to "
+             "edit details of text.",
+        action='store_true')
+    parser.add_argument(
+        '--debug',
+        help="activate debug mode of script for verbose"
+             " feedback on action of script.",
+        action='store_true')
+    parser.add_argument(
+        '--dryrun',
+        help="run script without sending email",
+        action='store_true')
+    return parser.parse_args()
 
 
 def sendEmail(sender='', to='', cc='', subject='', message_text='',
