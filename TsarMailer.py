@@ -28,6 +28,7 @@ ListStartDate = datetime(2018, 12, 30)
 # this is set for 2019, careful to include the full week or the Friday
 # reminders will be out of sink with Sunday reminders.
 
+print(vetodateFile)
 
 def main(vetodateFile=None, jchostgsheet=None,
          ListStartDate=datetime(2019, 1, 1)):
@@ -84,8 +85,8 @@ def main(vetodateFile=None, jchostgsheet=None,
         # Now set up email to send to JC list
         sender = 'JournalClubRoboTsar@gmail.com'
         to = jchosts.email[JCHostListPosition]
-        cc = (jchosts.email[JCHostListPosition_next] + '; ' +
-              'ligo-journal-club@caltech.edu' + '; ' +
+        cc = (jchosts.email[JCHostListPosition_next] + ', ' +
+              'ligo-journal-club@caltech.edu' + ', ' +
               'awade@ligo.caltech.edu')
         subject = 'Upcoming week: journal club presenters'
         message_text = '''
@@ -118,9 +119,9 @@ ligo-journal-club@caltech.edu list with a link and post it
         # Now set up email to send to JC list
         sender = 'JournalClubRoboTsar@gmail.com'
         to = 'ligo-journal-club@caltech.edu'
-        cc = (jchosts.email[JCHostListPosition] + '; ' +
-              jchosts.email[JCHostListPosition_next] + '; ' +
-              'JournalClubRoboTsar@gmail.com' + '; ' +
+        cc = (jchosts.email[JCHostListPosition] + ', ' +
+              jchosts.email[JCHostListPosition_next] + ', ' +
+              'JournalClubRoboTsar@gmail.com' + ', ' +
               'awade@ligo.caltech.edu')
         subject = 'Reminder: LIGO journal club today 3.00 pm'
         message_text = '''
