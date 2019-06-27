@@ -41,7 +41,6 @@ def main(vetodateFile=None, jchostgsheet=None,
     args = grabInputArgs()  # import cmdline/bash argments
 
     CurrentDate = dt.datetime.now()  # get current date at time of script run
-    # CurrentDate = datetime(2019, 3, 31)
 
     # Get csv version of google spreadsheet name list
     r = requests.get(jchostgsheet)
@@ -84,10 +83,15 @@ def main(vetodateFile=None, jchostgsheet=None,
     if args.weeklyreminder:
         # Now set up email to send to JC list
         sender = 'JournalClubRoboTsar@gmail.com'
-        to = jchosts.email[JCHostListPosition]
-        cc = (jchosts.email[JCHostListPosition_next] + ', ' +
-              'ligo-journal-club@caltech.edu' + ', ' +
-              'awade@ligo.caltech.edu')
+        ##to = jchosts.email[JCHostListPosition]
+        ##cc = (jchosts.email[JCHostListPosition_next] + ', ' +
+        ##      'ligo-journal-club@caltech.edu' + ', ' +
+        ##      'jwr@caltech.edu')
+        to = 'ligo-journal-club@caltech.edu'
+        cc = (jchosts.email[JCHostListPosition] + ', ' +
+              jchosts.email[JCHostListPosition_next] + ', ' +
+              'JournalClubRoboTsar@gmail.com' + ', ' +
+              'jwr@caltech.edu')
         subject = 'Upcoming week: journal club presenters'
         message_text = '''
 <p>Journal club this week will be lead by {leadnext}.</p>
@@ -122,11 +126,11 @@ ligo-journal-club@caltech.edu list with a link and post it
         cc = (jchosts.email[JCHostListPosition] + ', ' +
               jchosts.email[JCHostListPosition_next] + ', ' +
               'JournalClubRoboTsar@gmail.com' + ', ' +
-              'awade@ligo.caltech.edu')
+              'jwr@caltech.edu')
         subject = 'Reminder: LIGO journal club today 3.00 pm'
         message_text = '''
 <p>Just a friendly reminder that journal club is on today at 3.00 pm in the
-West Bridge 2nd floor seminar room 265.</p>
+West Bridge 2nd floor seminar room 265 (3rd floor SCR during summer).</p>
 
 <p>{leadnext} will be leading the discussion. Links this week's articles can be
 found at: <a href="https://wiki-40m.ligo.caltech.edu/Journal_Club">
@@ -265,7 +269,7 @@ class get_credentials():
         # todo: add more configuration options for authentication and usage
 
 
-if __name__ == '__main__':  # Make it run, bitch
+if __name__ == '__main__':  # Make it run
     main(vetodateFile=vetodateFile,
          jchostgsheet=jchostgsheet,
          ListStartDate=ListStartDate)
