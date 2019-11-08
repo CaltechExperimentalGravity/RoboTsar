@@ -26,7 +26,7 @@ jchostgsheet = ('https://docs.google.com/spreadsheets/d/'
                 'pub?gid=0&single=true&output=csv')
 ListStartDate = datetime(2018, 12, 30)
 # this is set for 2019, careful to include the full week or the Friday
-# reminders will be out of sink with Sunday reminders.
+# reminders will be out of sync with Sunday reminders.
 
 print(vetodateFile)
 
@@ -84,9 +84,9 @@ def main(vetodateFile=None, jchostgsheet=None,
         # Now set up email to send to JC list
         sender = 'JournalClubRoboTsar@gmail.com'
         to = 'ligo-journal-club@caltech.edu'
-        cc = (jchosts.email[JCHostListPosition] + ', ' +
-              jchosts.email[JCHostListPosition_next] + ', ' +
-              'jwr@caltech.edu')
+        #cc = (jchosts.email[JCHostListPosition] + ', ' +
+        #      jchosts.email[JCHostListPosition_next] + ', ' +
+        #      'jwr@caltech.edu')
         subject = 'Upcoming week: journal club presenters'
         message_text = '''
 <p>Journal club this week will be lead by {leadnext}.</p>
@@ -109,7 +109,7 @@ ligo-journal-club@caltech.edu list with a link and post it
                    leadnextnext=jchosts.people[JCHostListPosition_next])
 
         # Now send the actual email
-        sendEmail(sender=sender, to=to, cc=cc,
+        sendEmail(sender=sender, to=to, #cc=cc,
                   subject=subject, message_text=message_text,
                   host='smtp.gmail.com', port='587',
                   credentialsFile=credentialsFile, dryrun=args.dryrun)
@@ -118,9 +118,9 @@ ligo-journal-club@caltech.edu list with a link and post it
         # Now set up email to send to JC list
         sender = 'JournalClubRoboTsar@gmail.com'
         to = 'ligo-journal-club@caltech.edu'
-        cc = (jchosts.email[JCHostListPosition] + ', ' +
-              jchosts.email[JCHostListPosition_next] + ', ' +
-              'jwr@caltech.edu')
+        #cc = (jchosts.email[JCHostListPosition] + ', ' +
+        #      jchosts.email[JCHostListPosition_next] + ', ' +
+        #      'jwr@caltech.edu')
         subject = 'Reminder: LIGO journal club today 3.00 pm'
         message_text = '''
 <p>Just a friendly reminder that journal club is on today at 3.00 pm in the
@@ -137,7 +137,7 @@ https://wiki-40m.ligo.caltech.edu/Journal_Club<a>.</p>
                    leadnextnext=jchosts.people[JCHostListPosition_next])
 
         # Now send the actual email
-        sendEmail(sender=sender, to=to, cc=cc,
+        sendEmail(sender=sender, to=to, #cc=cc,
                   subject=subject, message_text=message_text,
                   host='smtp.gmail.com', port='587',
                   credentialsFile=credentialsFile, dryrun=args.dryrun)
