@@ -1,10 +1,11 @@
 #!/opt/rtcds/caltech/c1/scripts/general/RoboTsar/envTsar/bin/python
 from __future__ import print_function
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import datetime as dt
 import argparse
 import configparser
+import sys
 
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -58,6 +59,12 @@ def main(vetodateFile=None, jchostgsheet=None,
 
     # grab list of veto dates and count how many to today
     num_skips = np.sum(pd.to_datetime(vetodates.vetodate) <= CurrentDate)
+
+    # Check if this week is a holiday
+    weeksFromHoliday = (pd.to_datetime(vetodates.vetodate) - CurrentDate) / timedelta(days=7)
+    holidayThisWeek = bool(np.sum((weeksFromHoliday > 0) & (weeksFromHoliday < 1)))
+    if holidayThisWeek:
+        sys.exit('This week is a holiday - No email was sent')
 
     # phase adj num from google spreadsheet
     phase_adj = jchosts.phase_adj[0]
