@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import datetime as dt
 import argparse
 import configparser
-import sys
 
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -25,23 +24,25 @@ credentialsFile = scriptPath + 'RoboTsar/.credentials/JCTcred.secret'
 jchostgsheet = ('https://docs.google.com/spreadsheets/d/'
                 '1TxTmFStB9jT1xCvscr5xKY5ovuA4nme58XK4IrqI6_0/'
                 'pub?gid=0&single=true&output=csv')
-ListStartDate = datetime(2018, 12, 30)
-# this is set for 2019, careful to include the full week or the Friday
+ListStartDate = datetime(2019, 12, 29)
+# this is set for 2020, careful to include the full week or the Friday
 # reminders will be out of sync with Sunday reminders.
 
-print(vetodateFile)
 
-def main(vetodateFile=None, jchostgsheet=None,
-         ListStartDate=datetime(2019, 1, 1)):
+def main(vetodateFile=None, jchostgsheet=None, ListStartDate=None):
 
     # type and checking, throw assert errors on failure
     assert isinstance(vetodateFile, str), "Argument must be string"
     assert os.path.exists(vetodateFile), "vetodateFile not found in path"
     assert isinstance(jchostgsheet, str), "Argument must be string"
+    assert isinstance(ListStartDate, datetime), "Argument must be a datetime"
 
     args = grabInputArgs()  # import cmdline/bash argments
 
-    CurrentDate = dt.datetime.now()  # get current date at time of script run
+    # get current date at time of script run (need to zero the hrs, min, sec)
+    CurrentDate = datetime(dt.datetime.now().year, 
+                           dt.datetime.now().month, 
+                           dt.datetime.now().day)
 
     # Get csv version of google spreadsheet name list
     r = requests.get(jchostgsheet)
@@ -62,9 +63,11 @@ def main(vetodateFile=None, jchostgsheet=None,
 
     # Check if this week is a holiday
     weeksFromHoliday = (pd.to_datetime(vetodates.vetodate) - CurrentDate) / timedelta(days=7)
-    holidayThisWeek = bool(np.sum((weeksFromHoliday > 0) & (weeksFromHoliday < 1)))
+    holidayThisWeek = bool(np.sum((weeksFromHoliday >= 0) & (weeksFromHoliday < 1)))
     if holidayThisWeek:
-        sys.exit('This week is a holiday - No email was sent')
+        # Don't send emails on holiday weeks
+        print('This week is a holiday - No email was sent')
+        return
 
     # phase adj num from google spreadsheet
     phase_adj = jchosts.phase_adj[0]
