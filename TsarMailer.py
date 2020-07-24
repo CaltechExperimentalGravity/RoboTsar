@@ -132,9 +132,22 @@ ligo-journal-club@caltech.edu list with a link and post it
         #      jchosts.email[JCHostListPosition_next] + ', ' +
         #      'jwr@caltech.edu')
         subject = 'Reminder: LIGO journal club today 3.00 pm'
+#        message_text = '''
+#<p>Just a friendly reminder that journal club is on today at 3.00 pm in the
+#West Bridge 2nd floor seminar room 265 (3rd floor SCR during summer).</p>
+#
+#<p>{leadnext} will be leading the discussion. Links this week's articles can be
+#found at: <a href="https://wiki-40m.ligo.caltech.edu/Journal_Club">
+#https://wiki-40m.ligo.caltech.edu/Journal_Club<a>.</p>
+#
+#<hr>
+#
+#<p>This is an automatically generated reminder.</p>
+#        '''.format(leadnext=jchosts.people[JCHostListPosition],
+#                   leadnextnext=jchosts.people[JCHostListPosition_next])
         message_text = '''
-<p>Just a friendly reminder that journal club is on today at 3.00 pm in the
-West Bridge 2nd floor seminar room 265 (3rd floor SCR during summer).</p>
+<p>Just a friendly reminder that virtual journal club is on today at 3.00 pm (<a href="https://caltech.zoom.us/j/620707875?pwd=cW9VTkRNMi93aGErOG8xU0tzNzVPUT09">
+https://caltech.zoom.us/j/620707875?pwd=cW9VTkRNMi93aGErOG8xU0tzNzVPUT09<a>).</p>
 
 <p>{leadnext} will be leading the discussion. Links this week's articles can be
 found at: <a href="https://wiki-40m.ligo.caltech.edu/Journal_Club">
