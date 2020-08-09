@@ -146,8 +146,8 @@ ligo-journal-club@caltech.edu list with a link and post it
 #        '''.format(leadnext=jchosts.people[JCHostListPosition],
 #                   leadnextnext=jchosts.people[JCHostListPosition_next])
         message_text = '''
-<p>Just a friendly reminder that virtual journal club is on today at 3.00 pm (<a href="https://caltech.zoom.us/j/620707875?pwd=cW9VTkRNMi93aGErOG8xU0tzNzVPUT09">
-https://caltech.zoom.us/j/620707875?pwd=cW9VTkRNMi93aGErOG8xU0tzNzVPUT09<a>).</p>
+<p>Just a friendly reminder that virtual journal club is on today at 3.00 pm:
+<a href="https://caltech.zoom.us/j/620707875?pwd=cW9VTkRNMi93aGErOG8xU0tzNzVPUT09">https://caltech.zoom.us/j/620707875?pwd=cW9VTkRNMi93aGErOG8xU0tzNzVPUT09<a></p>
 
 <p>{leadnext} will be leading the discussion. Links this week's articles can be
 found at: <a href="https://wiki-40m.ligo.caltech.edu/Journal_Club">
